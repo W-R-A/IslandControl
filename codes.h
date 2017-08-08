@@ -1,9 +1,9 @@
 //Actions to be perfomed when buttons are pressed
 
-#define ACTION0 mixColour(0, 0, 0, 1, 0, 0, sel)
-#define ACTION1 mixColour(0, 0, 0, 0, 1, 0, sel)
+#define ACTION0 mixColour(0, 0, 0, 1, 0, 0, sel); if (bright < 240 ){bright = bright + 10;}
+#define ACTION1 mixColour(0, 0, 0, 0, 1, 0, sel); if (bright > 50 ){bright = bright - 10;}
 #define ACTION2 runSpeed = 0;
-#define ACTION3 changeColour(0, 0, 0, sel);
+#define ACTION3 resetAuto(); changeColour(0, 0, 0, 5); sel = 5;
 #define ACTION4 changeColour(255, 0, 0, sel);
 #define ACTION5 changeColour(0, 255, 0, sel);
 #define ACTION6 changeColour(0, 0, 255, sel);
@@ -36,14 +36,14 @@
 #define ACTION33 sel = 1;
 #define ACTION34 sel = 2;
 #define ACTION35 changeColour(68, 255, 68, 0); changeColour(255, 0, 0, 1); changeColour(0, 0, 255, 2); changeColour(255, 215, 0, 3); changeColour(175, 238, 238, 4);//auto mode
-#define ACTION36 sel = 3;
-#define ACTION37 sel = 4;
+#define ACTION36 sel = 1;
+#define ACTION37 sel = 2;
 #define ACTION38 sel = 5;
-#define ACTION39 Serial.print("Action 39 triggered");
+#define ACTION39 int x = sel; for (int i = 0; i < NUM_LEDS; i++){leds[i].setRGB(255, 255, 255); FastLED.show(); delay(10); sel = 5; showChanges(); sel = x;}
 #define ACTION40 doJump3(); jump3 = 1; 
 #define ACTION41 doJump7(); jump7 = 1; 
-#define ACTION42 doFade3(); fade3 = 1; 
-#define ACTION43 doFade7(); fade7 = 1; 
+#define ACTION42 doFade(); fade3 = 1; 
+#define ACTION43 doFade(); fade7 = 1; 
 
 
 //Remote for LED control. Order is in top left to bottom right, working rows then columns.

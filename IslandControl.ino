@@ -15,12 +15,15 @@
 #define LED_PIN     3
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2812B
-#define NUM_LEDS    5
+#define NUM_LEDS    3
 #define TASK_TIME 500000 //0.5s
 
 //Variables
 // This is an array of leds.  One item for each led in your strip.
 CRGB leds[NUM_LEDS];
+
+//Brightness of led strip for palete
+int bright = 128;
 
 //The currently selected led, if 5 then all are selected
 int sel = 0;
@@ -44,6 +47,10 @@ volatile unsigned int runSpeed = 1;
 
 //Pos
 volatile int seqPosition = 0;
+
+//Create a palette of colours used for fading
+CRGBPalette16 currentPalette;
+TBlendType    currentBlending;
 
 //IR stuff
 //Define the pin which the reciever is connected to
@@ -94,6 +101,14 @@ void setup()
   Timer1.initialize();
   //Run function every 3s
   Timer1.attachInterrupt(processTasks, TASK_TIME);
+
+  //Setup colour paletes for later use
+  currentPalette = RainbowColors_p;
+  currentBlending = LINEARBLEND;
+
+  //Display fade animation on startup
+  doFade();
+  fade7 = 1;
 }
 
 //Loop
@@ -116,9 +131,7 @@ void loop() {
       Serial.println(res);
       Serial.print("Current selected led is ");
       Serial.println(sel);
-      digitalWrite(13, 1);
-      delay(50);
-      digitalWrite(13, 0);
+      ACTION39;
       doAction(res);
     }
     else
@@ -249,45 +262,24 @@ void doJump7()
     showChanges();
 }
 
-//Fade3
-void doFade3()
+//Fade
+void doFade()
 {
-    switch(seqPosition)
-    {
-        //Start by settting all to red
-        case 0:
-            changeColour(255, 0, 0, sel);
-            //Increment position variable
-            seqPosition++;
-            break;
-            
-        //Then change to green
-        case 1:
-            changeColour(0, 255, 0, sel);
-            //Increment position variable
-            seqPosition++;
-            break;
-
-        //Then to blue
-        case 2:
-            changeColour(0, 0, 255, sel);
-            seqPosition = 0;
-            break;
-            
-        //If none of the above, reset position variable and set back to red
-        default: 
-            seqPosition = 0;
-            changeColour(255, 0, 0, sel);
-            break;      
-    }
-    //Update the LEDs
-    showChanges();
+  Serial.println("Fading");
+    seqPosition = seqPosition + 5; /* motion speed */
+    FillLEDsFromPaletteColors(seqPosition, bright);
+    FastLED.show();
+    
 }
 
-//Fade7
-void doFade7()
-{
-  
+//Fade functions
+
+void FillLEDsFromPaletteColors( uint8_t colorIndex, uint8_t brightness)
+{    
+    for( int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness, currentBlending);
+        colorIndex += 3;
+    }
 }
 
 
@@ -295,7 +287,7 @@ void changeColour(int r, int g, int b, int led)
 {
     //Workaround to prevent sel getting reset
     int x = sel;
-    if (sel == 5)
+    if (led == 5)
     {
         for (int i = 0; i < NUM_LEDS; i++)
         {
@@ -319,7 +311,7 @@ void mixColour(bool r, bool g, bool b, bool maxBright, bool minBright, signed in
 {
     //Workaround to prevent sel getting reset
     int x = sel;
-    if (sel == 5)
+    if (led == 5)
     {
         for (int i = 0; i < NUM_LEDS; i++)
         {
@@ -340,17 +332,17 @@ void mixColour(bool r, bool g, bool b, bool maxBright, bool minBright, signed in
             if (minBright)
             {
                 leds[i].fadeLightBy( 64 );
-                red[i] = leds[led].red;
-                green[i] = leds[led].green;
-                blue[i] = leds[led].blue; 
+                red[i] = leds[i].red;
+                green[i] = leds[i].green;
+                blue[i] = leds[i].blue; 
             }
             
             if (maxBright)
             {
                 leds[i].maximizeBrightness();
-                red[i] = leds[led].red;
-                green[i] = leds[led].green;
-                blue[i] = leds[led].blue;
+                red[i] = leds[i].red;
+                green[i] = leds[i].green;
+                blue[i] = leds[i].blue;
             }  
         }
     }
@@ -427,19 +419,22 @@ void processTasks()
         //Do jump7 routine
         if (jump7)
         {
+            sel = 5;
             doJump7();
         }
     
         //Do fade3 routine
         if (fade3)
         {
-            doFade3();
+            sel = 5;
+            doFade();
         }
     
         //Do fade7 routine
         if (fade7)
         {
-            doFade7();
+            sel = 5;
+            doFade();
         }   
     }
 }
@@ -459,11 +454,13 @@ int findAction (decode_results *results)
     return i;
 }
 
+
+
 //Perform requested action
 void doAction(int action)
 {
     //Reset any auto modes in operation
-    if ((jump3 || jump7 || fade3 || fade7) && !(action == 31 || action == 27))
+    if ((jump3 || jump7 || fade3 || fade7) && !(action == 31 || action == 27 || action == 0 || action == 1))
     {
         resetAuto();   
     }
